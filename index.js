@@ -136,7 +136,7 @@ InfluxDB.prototype.createDatabase = function(databaseName, options, callback) {
         'content-type': 'application/json'
       },
       body: JSON.stringify(options, null)
-    }, this._parseCallback(callback));  
+    }, this._parseV9Callback(callback));  
   }
 };
 
@@ -149,7 +149,7 @@ InfluxDB.prototype.deleteDatabase = function(databaseName, callback) {
   } else {
     this.request.get({
       url: this.url('query', {q: 'DROP DATABASE ' + databaseName})
-    }, this._parseCallback(callback));
+    }, this._parseV9Callback(callback));
   }
 };
 
@@ -252,7 +252,7 @@ InfluxDB.prototype.createUser = function(databaseName, username, password, callb
       headers: {
         'content-type': 'application/json'
       }
-    }, this._parseCallback(callback));  
+    }, this._parseV9Callback(callback));  
   }
 };
 
@@ -266,7 +266,7 @@ InfluxDB.prototype.updateUser = function (databaseName, userName, options, callb
       body: JSON.stringify(options, null)
     }, this._parseCallback(callback));
   } else {
-    callback(new Error('Update user is not supported by influx 0.9. User grant, revoke and setPassord instead'));
+    callback(new Error('Update user is not supported by influx 0.9. User grant, revoke and setPassword instead'));
   }
 };
 
@@ -329,7 +329,7 @@ InfluxDB.prototype.writeSeriesV8 = function(series, options, callback) {
 };
 
 InfluxDB.prototype.writeSeriesV9 = function(series, options, callback) {
-  if(typeof options === 'function') {
+  if (typeof options === 'function') {
     callback = options;
     options  = {};
   }
@@ -375,7 +375,7 @@ InfluxDB.prototype.writeSeriesV9 = function(series, options, callback) {
     },
     pool : 'undefined' !== typeof options.pool ? options.pool : {},
     body: JSON.stringify(data)
-  }, this._parseCallback(callback));
+  }, this._parseV9Callback(callback));
 };
 
 InfluxDB.prototype.writeSeries = function(series, options, callback) {
@@ -435,7 +435,7 @@ InfluxDB.prototype.dropSeries  = function(databaseName, seriesName, callback) {
       headers: {
         'content-type': 'application/json'
       }
-    }, this._parseCallback(callback)); 
+    }, this._parseV9Callback(callback)); 
   }
 };
 
