@@ -350,21 +350,14 @@ InfluxDB.prototype.writeSeriesV9 = function(series, options, callback) {
     var datum = {points: []};
 
     // Convert the {name:value} pair into an influx point
-    _.each(dataPoints, function(point) {
+    _.each(dataPoints, function(point, index) {
       var myPoint = {
         name: seriesName,
-        fields: {}
+        fields: point
       };
-      myPoint.fields.name = _.keys(point)[0];
-      myPoint.fields.value = point[myPoint.fields.name];
 
-      if(myPoint.name === 'time' && myPoint.fields.value instanceof Date) {
-        myPoint.fields.value = myPoint.fields.value.valueOf();
-        query.time_precision = 'ms';
-      }
-      
       datum.points.push(myPoint);
-    });     
+    });
     _.extend(data, datum);
   });
 
