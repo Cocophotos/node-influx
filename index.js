@@ -338,10 +338,12 @@ InfluxDB.prototype.writeSeriesV9 = function(series, options, callback) {
   var query = options.query || {};
   var data = {
     database: options.database || this.options.database,
-    retentionPolicy: options.retentionPolicy || 'default',
     tags: options.tags || {}
   };
   
+  if (options.retentionPolicy) {
+    data.retentionPolicy = options.retentionPolicy;
+  }
   if (options.time) {
     data.time = options.time;
   }
