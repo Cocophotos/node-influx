@@ -67,7 +67,7 @@ InfluxDB.prototype._parseV9Callback = function(callback) {
     }
     if (res.statusCode < 200 || res.statusCode >= 300) {
       return callback(new Error(body));
-    } 
+    }
     if (body.results) {
       return callback(null, body.results);
     } else {
@@ -102,16 +102,16 @@ InfluxDB.prototype.url = function(endpoint, query, database) {
     var myQuery =  _.extend({
       u: this.options.username,
       p: this.options.password,
-      time_precision: this.options.timePrecision
+      precision: this.options.timePrecision
     }, query || {});
-    
+
     if (database && query) {
       myQuery.db = database
     }
     return url.format({
       pathname: endpoint,
       query: myQuery
-    });  
+    });
   }
 };
 
@@ -120,7 +120,7 @@ InfluxDB.prototype.createDatabase = function(databaseName, options, callback) {
       callback = options;
       options = {};
   }
-  
+
   if (this.options.influxVersion < modernInfluxVersion) {
     this.request.post({
       url: this.url('cluster/database_configs/' + databaseName),
@@ -136,7 +136,7 @@ InfluxDB.prototype.createDatabase = function(databaseName, options, callback) {
         'content-type': 'application/json'
       },
       body: JSON.stringify(options, null)
-    }, this._parseV9Callback(callback));  
+    }, this._parseV9Callback(callback));
   }
 };
 
@@ -204,7 +204,7 @@ InfluxDB.prototype.getSeriesNames = function(databaseName,callback) {
     this.request.get({
       url: this.url('query', {q: 'SHOW SERIES'}, databaseName),
       json: true
-    }, this._parseV9Callback(callback));  
+    }, this._parseV9Callback(callback));
   }
 };
 
@@ -219,7 +219,7 @@ InfluxDB.prototype.getUsers = function(databaseName, callback) {
     this.request.get({
       url: this.url('query', {q: 'SHOW USERS'} ),
       json: true
-    }, this._parseV9Callback(callback));  
+    }, this._parseV9Callback(callback));
   }
 };
 
@@ -252,7 +252,7 @@ InfluxDB.prototype.createUser = function(databaseName, username, password, callb
       headers: {
         'content-type': 'application/json'
       }
-    }, this._parseV9Callback(callback));  
+    }, this._parseV9Callback(callback));
   }
 };
 
@@ -336,40 +336,47 @@ InfluxDB.prototype.writeSeriesV9 = function(series, options, callback) {
   if ('undefined' === typeof options) options = {};
 
   var query = options.query || {};
-  var data = {
-    database: options.database || this.options.database,
-    tags: options.tags || {}
-  };
-  
+  var tags  = options.tags || {};
+  var database = options.database || this.options.database;
+
+  var data = [];
+
+  var linear_tags = [];
+  for(var k in tags){
+    linear_tags.push(k + "=" + tags[k]);
+  }
+  linear_tags = linear_tags.join(",");
+
   if (options.retentionPolicy) {
-    data.retentionPolicy = options.retentionPolicy;
+    query.rp = options.retentionPolicy;
   }
-  if (options.time) {
-    data.time = options.time;
-  }
+
+  query.db = database;
 
   _.each(series, function(dataPoints, seriesName) {
-    var datum = {points: []};
-
     // Convert the {name:value} pair into an influx point
     _.each(dataPoints, function(point, index) {
-      var myPoint = {
-        name: seriesName,
-        fields: point
-      };
+        var linear_values = []
+        for(var k in point){
+            linear_values.push(k + "=" + point[k]);
+        }
+        linear_values = linear_values.join(",");
 
-      datum.points.push(myPoint);
+        var line = seriesName + "," + linear_tags + " " + linear_values;
+        if(options.time){
+            line += " " + options.time.valueOf();
+        }
+        data.push(line);
     });
-    _.extend(data, datum);
   });
 
   this.request.post({
     url: this.url('write', query),
-    headers: {
+    /*headers: {
       'content-type': 'application/json'
-    },
+    },*/
     pool : 'undefined' !== typeof options.pool ? options.pool : {},
-    body: JSON.stringify(data)
+    body: data.join('\n') //JSON.stringify(data)
   }, this._parseV9Callback(callback));
 };
 
@@ -403,7 +410,7 @@ InfluxDB.prototype.query = function(query, callback) {
     this.request.get({
       url: this.url('query', {q: query}, this.options.database),
       json: true
-    }, this._parseV9Callback(callback));  
+    }, this._parseV9Callback(callback));
   }
 };
 
@@ -430,7 +437,7 @@ InfluxDB.prototype.dropSeries  = function(databaseName, seriesName, callback) {
       headers: {
         'content-type': 'application/json'
       }
-    }, this._parseV9Callback(callback)); 
+    }, this._parseV9Callback(callback));
   }
 };
 
@@ -461,7 +468,7 @@ InfluxDB.prototype.getContinuousQueries = function(databaseName,callback) {
       return callback(err, _.findWhere(JSON.parse(results).results[0].series, {name: databaseName}));
     }));
   }
-  
+
 };
 
 
@@ -487,7 +494,7 @@ InfluxDB.prototype.dropContinuousQuery  = function(databaseName, queryID, callba
       headers: {
         'content-type': 'application/json'
       }
-    }, this._parseCallback(callback));  
+    }, this._parseCallback(callback));
   }
 };
 
